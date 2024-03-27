@@ -126,49 +126,60 @@ int main(int argc, char const *argv[])
 	}
 	cout<<"\n";
 
-
+	// khởi tạo một ma trận hai chiều có kích thước phù hợp -> bảng phân tích ngữ pháp
 	int parse_table[non_terms.size()][terms.size()];
+	// lấp đầy bảng bằng cách thêm phần tử -1
 	fill(&parse_table[0][0], &parse_table[0][0] + sizeof(parse_table)/sizeof(parse_table[0][0]), -1);
 	// Tạo bảng parse_table
-    for(auto prod = gram.begin(); prod != gram.end(); ++prod) {
-        string rhs = prod->second;
-
-        set<char> next_list;
+    for(auto i = gram.begin(); i != gram.end(); ++i) {
+        string rhs = i->second;
+		// khởi tạo một set lưu trữ	các rhs của quy tắc
+        set<char> list;
         bool finished = false;
+		// duyệt tất cả phần tử trong rhs
         for(auto ch = rhs.begin(); ch != rhs.end(); ++ch) {
+			// kiểm tra xem ký tự không phải viết hoa và khác epsilon
+			// nếu đúng thì insert vào list
             if(!isupper(*ch)) {
                 if(*ch != 'e') {
-                    next_list.insert(*ch);
+                    list.insert(*ch);
                     finished = true;
                     break;
                 }
                 continue;
             }
-
+			// tạo một set bao gồm tất cả các first
             set<char> firsts_copy(firsts[*ch].begin(), firsts[*ch].end());
             if(firsts_copy.find('e') == firsts_copy.end()) {
-                next_list.insert(firsts_copy.begin(), firsts_copy.end());
+                list.insert(firsts_copy.begin(), firsts_copy.end());
                 finished = true;
                 break;
             }
+			// loại bỏ epsilon
             firsts_copy.erase('e');
-            next_list.insert(firsts_copy.begin(), firsts_copy.end());
+			// thêm vào list
+            list.insert(firsts_copy.begin(), firsts_copy.end());
         }
         // Nếu toàn bộ rhs có thể bị bỏ qua thông qua epsilon hoặc đạt đến cuối
-        // Thêm follow vào next_list
+        // Thêm follow vào list
         if(!finished) {
-            next_list.insert(follows[prod->first].begin(), follows[prod->first].end());
+            list.insert(follows[i->first].begin(), follows[i->first].end());
         }
 
-        for(auto ch = next_list.begin(); ch != next_list.end(); ++ch) {
-            int row = distance(non_terms.begin(), non_terms.find(prod->first));
+        for(auto ch = list.begin(); ch != list.end(); ++ch) {
+			// lấy ra địa chỉ hàng
+            int row = distance(non_terms.begin(), non_terms.find(i->first));
+			// lấy ra địa chỉ cột
             int col = distance(terms.begin(), terms.find(*ch));
-            int prod_num = distance(gram.begin(), prod);
+			// lấy ra quy tắc
+            int i_num = distance(gram.begin(), i);
             if(parse_table[row][col] != -1) {
-                cout<<"Xung đột tại ["<<row<<"]["<<col<<"] cho quy tắc "<<prod_num<<"\n";
+				// xử lý xung đột
+                cout<<"Xung đột tại ["<<row<<"]["<<col<<"] cho quy tắc "<<i_num<<"\n";
                 continue;
             }
-            parse_table[row][col] = prod_num;
+			// cập nhật giá trị trong parse_table
+            parse_table[row][col] = i_num;
         }
     }
 	
